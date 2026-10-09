@@ -1,0 +1,29 @@
+[package]
+name = "ton_macros"
+version = "0.1.2"
+description.workspace = true
+keywords.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+readme = "README.md"
+publish = true
+
+include = [
+    "Cargo.toml",
+    "src/*",
+]
+
+[dependencies]
+convert_case = "0.11"
+deluxe = "0.5"
+proc-macro-crate = "3.3"
+proc-macro2 = "1.0"
+quote = "1.0"
+syn = { version = "2.0", features = ["full", "extra-traits"] }
+
+
+[lib]
+proc-macro = true
