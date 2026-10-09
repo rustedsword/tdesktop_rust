@@ -1,0 +1,145 @@
+use crate::errors::TonCoreError;
+use crate::traits::tlb::TLB;
+use crate::types::TonAddress;
+use std::str::FromStr;
+use std::sync::Arc;
+use tokio_test::assert_err;
+use ton_macros::TLB;
+
+#[derive(TLB, Eq, PartialEq, Debug)]
+#[tlb(prefix = 1, bits_len = 4)]
+struct Struct1 {
+    value: u32,
+}
+
+#[derive(TLB, Eq, PartialEq, Debug)]
+#[tlb(prefix = 2, bits_len = 6)]
+struct Struct2 {
+    value: TonAddress,
+}
+
+#[derive(TLB, Eq, PartialEq, Debug)]
+#[tlb(prefix = 3, bits_len = 8)]
+struct Struct3;
+
+#[derive(TLB, Eq, PartialEq, Debug)]
+#[tlb(prefix = 4, bits_len = 8)]
+struct Struct4;
+
+#[derive(TLB, Eq, PartialEq, Debug)]
+#[tlb(prefix = 1, bits_len = 1)]
+struct TaggedU8(u8);
+
+/// Automatically match underlying variant by prefix (tlb tag)
+#[derive(TLB, Eq, PartialEq, Debug)]
+enum MyEnum {
+    Var1(Struct1),
+    Var2(Struct2),
+    Var3(Box<Struct3>),
+    Var4(Arc<Struct4>),
+    Var5(Box<MyEnum>),
+}
+
+#[derive(TLB, Eq, PartialEq, Debug)]
+enum InnerEnumWithNull {
+    Null(u8),
+}
+
+#[derive(TLB, Eq, PartialEq, Debug)]
+#[tlb(prefix = 0b0, bits_len = 1)]
+enum InnerEnumWithPrefix {
+    Null(u8),
+}
+
+#[derive(TLB, Eq, PartialEq, Debug)]
+enum OuterEnumWithShadow {
+    First(Struct1),
+    Second(InnerEnumWithNull),
+    Third(TaggedU8),
+}
+
+#[derive(TLB, Eq, PartialEq, Debug)]
+enum OuterEnumNoShadow {
+    First(Struct1),
+    Second(InnerEnumWithPrefix),
+    Third(TaggedU8),
+}
+
+#[test]
+fn test_tlb_enum_tlb() -> anyhow::Result<()> {
+    let s1 = Struct1 { value: 42 };
+    let e1 = MyEnum::Var1(s1);
+
+    let s2 = Struct2 {
+        value: TonAddress::from_str("EQBSUY4UWGJFAps0KwHY4tpOGqzU41DZhyrT8OuyAWWtnezy")?,
+    };
+    let e2 = MyEnum::Var2(s2);
+
+    let e1_boc = e1.to_boc()?;
+    let e2_boc = e2.to_boc()?;
+
+    assert_eq!(MyEnum::from_boc(e1_boc)?, e1);
+    assert_eq!(MyEnum::from_boc(e2_boc)?, e2);
+    Ok(())
+}
+
+#[test]
+fn test_tlb_enum_from() -> anyhow::Result<()> {
+    // just check it works
+    let s1 = Struct1 { value: 42 };
+    let e1: MyEnum = s1.into();
+
+    let _e3: MyEnum = Struct3.into();
+    let _e3: MyEnum = Box::new(Struct3).into();
+
+    let _e4: MyEnum = Struct4.into();
+    let _e4: MyEnum = Arc::new(Struct4).into();
+
+    let _e5: MyEnum = Box::new(e1).into();
+    Ok(())
+}
+
+#[test]
+fn test_inner_null_shadows_outer_third_variant() -> anyhow::Result<()> {
+    let third = OuterEnumWithShadow::Third(TaggedU8(0b1010_1010));
+    let cell = third.to_cell()?;
+    let parsed = OuterEnumWithShadow::from_cell(&cell)?;
+    assert!(matches!(parsed, OuterEnumWithShadow::Second(InnerEnumWithNull::Null(_))));
+    assert_ne!(parsed, third);
+    Ok(())
+}
+
+#[test]
+fn test_inner_prefix_allows_outer_third_variant() -> anyhow::Result<()> {
+    let third = OuterEnumNoShadow::Third(TaggedU8(0b1010_1010));
+    let cell = third.to_cell()?;
+    let parsed = OuterEnumNoShadow::from_cell(&cell)?;
+    assert!(matches!(parsed, OuterEnumNoShadow::Third(_)));
+    assert_eq!(parsed, third);
+    Ok(())
+}
+
+#[test]
+fn test_tlb_enum_out_of_option() -> anyhow::Result<()> {
+    #[derive(TLB, Eq, PartialEq, Debug)]
+    enum OutOfOptionEnum {
+        Var1(Struct2),
+    }
+
+    let s1 = Struct1 { value: 1 };
+    let e1 = MyEnum::Var1(s1);
+    let e1_boc = e1.to_boc_hex()?;
+
+    let err = assert_err!(OutOfOptionEnum::from_boc_hex(&e1_boc));
+    match err {
+        TonCoreError::TLBEnumOutOfOptions {
+            message,
+            cell_boc_hex: boc_hex,
+        } => {
+            assert_eq!(message, "OutOfOptionEnum: got prefix: 4");
+            assert_eq!(boc_hex, e1_boc);
+        }
+        _ => panic!("Unexpected error type: {err}"),
+    }
+    Ok(())
+}

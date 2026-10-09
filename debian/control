@@ -1,0 +1,39 @@
+Source: tdesktop-rust
+Section: libs
+Priority: optional
+Maintainer: Stanislav Aleksandrov <lightofmysoul@gmail.com>
+Build-Depends:
+ cargo,
+ debhelper-compat (= 13),
+ rustc,
+Standards-Version: 4.7.3
+Rules-Requires-Root: no
+Homepage: https://github.com/telegramdesktop/tdesktop
+
+Package: libtdesktop-rust-dev
+Section: libdevel
+Architecture: amd64 arm64
+Depends:
+ ${misc:Depends},
+Conflicts:
+ libtlottie-dev,
+Replaces:
+ libtlottie-dev,
+Description: Rust libraries used by Telegram Desktop
+ Telegram Desktop 7.3 links all of its Rust dependencies as a single static
+ library, tdesktop_rust, so that one copy of the Rust standard library, its
+ allocator and its panic machinery serve all of them. It holds:
+ .
+  * tlottie, the Lottie renderer behind stickers, emoji and interface
+    animations, which replaced the bundled rlottie in 7.2.7;
+  * wallet-engine, the TON wallet and TON Connect engine behind the in-app
+    wallet, with the C++ binding UniFFI generates for it.
+ .
+ No distribution ships either library, and Telegram Desktop's CMake looks them
+ up unconditionally on Linux, so they have to exist as a package before
+ telegram-desktop can build.
+ .
+ This package provides the static library, the tlottie header and the
+ wallet-engine binding, whose wallet_engine.cpp Telegram Desktop compiles
+ itself. The archive embeds the Rust standard library, so nothing links it at
+ runtime. It supersedes libtlottie-dev.

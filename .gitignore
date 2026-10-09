@@ -1,0 +1,12 @@
+target/
+
+# Ubuntu packaging
+build-packages/
+.cache/
+debian/.debhelper/
+debian/cargo/
+debian/files
+debian/libtdesktop-rust-dev/
+debian/wallet_engine/
+debian/*.substvars
+debian/debhelper-build-stamp

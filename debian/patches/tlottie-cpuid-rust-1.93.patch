@@ -1,0 +1,42 @@
+Description: Call the CPUID intrinsics from unsafe blocks for Rust 1.93
+ Upstream builds with Rust 1.96.1, where core::arch::x86_64::__cpuid and
+ __cpuid_count are safe functions. Ubuntu 26.04 ships Rust 1.93.1, where they
+ are still unsafe, so the three calls fail with E0133. On 1.96 the blocks are
+ merely redundant (unused_unsafe) and the emitted code is identical. aarch64
+ never compiles this file.
+Author: Stanislav Aleksandrov <lightofmysoul@gmail.com>
+Forwarded: not-needed (obsolete once Ubuntu's Rust reaches 1.96)
+
+diff --git a/src/renderer/cpu/simd/cpuid.rs b/src/renderer/cpu/simd/cpuid.rs
+index 47f85e0..3b1e871 100644
+--- a/src/renderer/cpu/simd/cpuid.rs
++++ b/src/renderer/cpu/simd/cpuid.rs
+@@ -46,8 +46,8 @@ unsafe fn xcr0() -> u64 {
+ /// True when the CPU reports `OSXSAVE` and the OS preserves every register
+ /// bank in `mask`.
+ fn os_preserves(mask: u64) -> bool {
+-  // CPUID leaf 1 exists on every x86_64 part.
+-  let leaf1 = __cpuid(1);
++  // SAFETY: CPUID leaf 1 exists on every x86_64 part.
++  let leaf1 = unsafe { __cpuid(1) };
+   if leaf1.ecx & (1 << 27) == 0 {
+     return false;
+   }
+@@ -58,13 +58,13 @@ fn os_preserves(mask: u64) -> bool {
+ 
+ /// Extended-feature flags, or `None` when the CPU predates CPUID leaf 7.
+ fn leaf7_ebx() -> Option<u32> {
+-  // Leaf 0 is always present and reports the highest valid leaf.
+-  let max_leaf = __cpuid(0).eax;
++  // SAFETY: leaf 0 is always present and reports the highest valid leaf.
++  let max_leaf = unsafe { __cpuid(0) }.eax;
+   if max_leaf < 7 {
+     return None;
+   }
+-  // Guarded by the max-leaf check above.
+-  Some(__cpuid_count(7, 0).ebx)
++  // SAFETY: guarded by the max-leaf check above.
++  Some(unsafe { __cpuid_count(7, 0) }.ebx)
+ }
+ 
+ fn detect_avx2() -> bool {

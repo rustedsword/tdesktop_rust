@@ -1,0 +1,301 @@
+Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
+Upstream-Name: tdesktop_rust
+Upstream-Contact: https://github.com/telegramdesktop/tdesktop/issues
+Source: https://github.com/telegramdesktop/tdesktop
+Comment:
+ There is no upstream release of tdesktop_rust: Telegram Desktop's build
+ recipes generate it as a two-line umbrella crate over tlottie and
+ wallet-engine, which this package carries as submodules at the commits
+ Telegram Desktop pins.
+ .
+ vendor/ holds the crates.io dependencies of both, and of the
+ uniffi-bindgen-cpp generator, each with its own licence files in place. The
+ licences below are the ones each crate declares in its Cargo.toml. The
+ crates no Linux amd64/arm64 build reaches are source-less stubs, generated
+ by cargo vendor-filterer, containing only their manifest; they are covered
+ by the vendor/* paragraph.
+ .
+ The static library links the Rust standard library, which is distributed
+ under the MIT or Apache-2.0 terms; only its object code, not its source,
+ ends up in the binary package.
+
+Files: *
+Copyright: 2026, Stanislav Aleksandrov <lightofmysoul@gmail.com>
+License: MIT
+
+Files: tlottie/*
+Copyright: 2026, dkaraush <dkaraush@gmail.com>
+License: MIT
+
+Files: wallet-engine/*
+Copyright: 2026, TON Core
+License: Apache-2.0 or MIT
+
+Files: wallet-engine/vendor/ton/*
+Copyright: Sild <silddev@pm.com>
+License: Apache-2.0 or MIT
+Comment: ston-fi/ton-rs, vendored by wallet-engine itself.
+
+Files: wallet-engine/bindgen/cpp/*
+Copyright: Nord Security and the uniffi-bindgen-cpp contributors
+License: MPL-2.0
+Comment: NordSecurity/uniffi-bindgen-cpp, vendored by wallet-engine itself.
+ It generates wallet_engine.hpp and wallet_engine.cpp from its templates, so
+ the generated binding shipped in the binary package is covered by the same
+ licence.
+
+Files: debian/patches/wallet-engine.patch
+Copyright: 2026, John Preston <johnprestonmail@gmail.com>
+License: Apache-2.0 or MIT
+Comment: Unmodified from desktop-app/patches, the patch set Telegram Desktop
+ applies to its dependencies. It changes wallet-engine and is distributed
+ under wallet-engine's terms.
+
+Files: vendor/*
+Copyright: the authors listed in each crate's Cargo.toml
+License: Apache-2.0 or MIT
+
+Files:
+ vendor/bitvec/*
+ vendor/bytes/*
+ vendor/cargo_metadata/*
+ vendor/convert_case/*
+ vendor/deluxe/*
+ vendor/deluxe-core/*
+ vendor/deluxe-macros/*
+ vendor/funty/*
+ vendor/generic-array/*
+ vendor/goblin/*
+ vendor/libm/*
+ vendor/nom/*
+ vendor/ordered-float/*
+ vendor/radium/*
+ vendor/scroll/*
+ vendor/scroll_derive/*
+ vendor/serde-aux/*
+ vendor/serde-value/*
+ vendor/slab/*
+ vendor/smawk/*
+ vendor/strsim/*
+ vendor/strsim-0.10.0/*
+ vendor/synstructure/*
+ vendor/tap/*
+ vendor/textwrap/*
+ vendor/weedle2/*
+ vendor/winnow/*
+ vendor/winnow-0.5.40/*
+ vendor/winnow-0.7.15/*
+ vendor/wyz/*
+ vendor/zmij/*
+Copyright: the authors listed in each crate's Cargo.toml
+License: MIT
+
+Files:
+ vendor/curve25519-dalek/*
+ vendor/ed25519-dalek/*
+ vendor/subtle/*
+Copyright: the authors listed in each crate's Cargo.toml
+License: BSD-3-clause
+
+Files:
+ vendor/icu_collections/*
+ vendor/icu_locale_core/*
+ vendor/icu_normalizer/*
+ vendor/icu_normalizer_data/*
+ vendor/icu_properties/*
+ vendor/icu_properties_data/*
+ vendor/icu_provider/*
+ vendor/litemap/*
+ vendor/potential_utf/*
+ vendor/tinystr/*
+ vendor/writeable/*
+ vendor/yoke/*
+ vendor/yoke-derive/*
+ vendor/zerofrom/*
+ vendor/zerofrom-derive/*
+ vendor/zerotrie/*
+ vendor/zerovec/*
+ vendor/zerovec-derive/*
+Copyright: the authors listed in each crate's Cargo.toml
+License: Unicode-3.0
+
+Files:
+ vendor/unicode-ident/*
+Copyright: the authors listed in each crate's Cargo.toml
+License: (Apache-2.0 or MIT) and Unicode-3.0
+
+Files:
+ vendor/linux-raw-sys/*
+ vendor/rustix/*
+Copyright: the authors listed in each crate's Cargo.toml
+License: Apache-2.0-with-LLVM-exception or Apache-2.0 or MIT
+
+Files:
+ vendor/memchr/*
+Copyright: the authors listed in each crate's Cargo.toml
+License: Unlicense or MIT
+
+Files:
+ vendor/unicode-linebreak/*
+Copyright: the authors listed in each crate's Cargo.toml
+License: Apache-2.0
+
+Files:
+ vendor/uniffi/*
+ vendor/uniffi_bindgen/*
+ vendor/uniffi_core/*
+ vendor/uniffi_internal_macros/*
+ vendor/uniffi_macros/*
+ vendor/uniffi_meta/*
+ vendor/uniffi_pipeline/*
+ vendor/uniffi_udl/*
+Copyright: the authors listed in each crate's Cargo.toml
+License: MPL-2.0
+
+License: Apache-2.0
+ On Debian systems the full text of the Apache License, Version 2.0 can be
+ found in /usr/share/common-licenses/Apache-2.0.
+
+License: Apache-2.0-with-LLVM-exception
+ The Apache License, Version 2.0, whose full text is in
+ /usr/share/common-licenses/Apache-2.0 on Debian systems, with the following
+ exception:
+ .
+ As an exception, if, as a result of your compiling your source code, portions
+ of this Software are embedded into an Object form of such source code, you
+ may redistribute such embedded portions in such Object form without complying
+ with the conditions of Sections 4(a), 4(b) and 4(d) of the License.
+ .
+ In addition, if you combine or link compiled forms of this Software with
+ software that is licensed under the GPLv2 ("Combined Software") and if a
+ court of competent jurisdiction determines that the patent provision (Section
+ 3), the indemnity provision (Section 9) or other Section of the License
+ conflicts with the conditions of the GPLv2, you may retroactively and
+ prospectively choose to deem waived or otherwise exclude such Section(s) of
+ the License, but only in their entirety and only with respect to the Combined
+ Software.
+
+License: BSD-3-clause
+ Redistribution and use in source and binary forms, with or without
+ modification, are permitted provided that the following conditions are
+ met:
+ .
+ 1. Redistributions of source code must retain the above copyright
+ notice, this list of conditions and the following disclaimer.
+ .
+ 2. Redistributions in binary form must reproduce the above copyright
+ notice, this list of conditions and the following disclaimer in the
+ documentation and/or other materials provided with the distribution.
+ .
+ 3. Neither the name of the copyright holder nor the names of its
+ contributors may be used to endorse or promote products derived from
+ this software without specific prior written permission.
+ .
+ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS
+ IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED
+ TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A
+ PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+ HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+ SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED
+ TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+ PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+ LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+ NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+License: MIT
+ Permission is hereby granted, free of charge, to any person obtaining a copy
+ of this software and associated documentation files (the "Software"), to deal
+ in the Software without restriction, including without limitation the rights
+ to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ copies of the Software, and to permit persons to whom the Software is
+ furnished to do so, subject to the following conditions:
+ .
+ The above copyright notice and this permission notice shall be included in
+ all copies or substantial portions of the Software.
+ .
+ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ SOFTWARE.
+
+License: MPL-2.0
+ On Debian systems the full text of the Mozilla Public License, Version 2.0
+ can be found in /usr/share/common-licenses/MPL-2.0.
+
+License: Unicode-3.0
+ UNICODE LICENSE V3
+ .
+ COPYRIGHT AND PERMISSION NOTICE
+ .
+ Copyright © 2020-2024 Unicode, Inc.
+ .
+ NOTICE TO USER: Carefully read the following legal agreement. BY
+ DOWNLOADING, INSTALLING, COPYING OR OTHERWISE USING DATA FILES, AND/OR
+ SOFTWARE, YOU UNEQUIVOCALLY ACCEPT, AND AGREE TO BE BOUND BY, ALL OF THE
+ TERMS AND CONDITIONS OF THIS AGREEMENT. IF YOU DO NOT AGREE, DO NOT
+ DOWNLOAD, INSTALL, COPY, DISTRIBUTE OR USE THE DATA FILES OR SOFTWARE.
+ .
+ Permission is hereby granted, free of charge, to any person obtaining a
+ copy of data files and any associated documentation (the "Data Files") or
+ software and any associated documentation (the "Software") to deal in the
+ Data Files or Software without restriction, including without limitation
+ the rights to use, copy, modify, merge, publish, distribute, and/or sell
+ copies of the Data Files or Software, and to permit persons to whom the
+ Data Files or Software are furnished to do so, provided that either (a)
+ this copyright and permission notice appear with all copies of the Data
+ Files or Software, or (b) this copyright and permission notice appear in
+ associated Documentation.
+ .
+ THE DATA FILES AND SOFTWARE ARE PROVIDED "AS IS", WITHOUT WARRANTY OF ANY
+ KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+ MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT OF
+ THIRD PARTY RIGHTS.
+ .
+ IN NO EVENT SHALL THE COPYRIGHT HOLDER OR HOLDERS INCLUDED IN THIS NOTICE
+ BE LIABLE FOR ANY CLAIM, OR ANY SPECIAL INDIRECT OR CONSEQUENTIAL DAMAGES,
+ OR ANY DAMAGES WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS,
+ WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION,
+ ARISING OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THE DATA
+ FILES OR SOFTWARE.
+ .
+ Except as contained in this notice, the name of a copyright holder shall
+ not be used in advertising or otherwise to promote the sale, use or other
+ dealings in these Data Files or Software without prior written
+ authorization of the copyright holder.
+ .
+ SPDX-License-Identifier: Unicode-3.0
+ .
+ —
+ .
+ Portions of ICU4X may have been adapted from ICU4C and/or ICU4J.
+ ICU 1.8.1 to ICU 57.1 © 1995-2016 International Business Machines Corporation and others.
+
+License: Unlicense
+ This is free and unencumbered software released into the public domain.
+ .
+ Anyone is free to copy, modify, publish, use, compile, sell, or
+ distribute this software, either in source code form or as a compiled
+ binary, for any purpose, commercial or non-commercial, and by any
+ means.
+ .
+ In jurisdictions that recognize copyright laws, the author or authors
+ of this software dedicate any and all copyright interest in the
+ software to the public domain. We make this dedication for the benefit
+ of the public at large and to the detriment of our heirs and
+ successors. We intend this dedication to be an overt act of
+ relinquishment in perpetuity of all present and future rights to this
+ software under copyright law.
+ .
+ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+ EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+ MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+ IN NO EVENT SHALL THE AUTHORS BE LIABLE FOR ANY CLAIM, DAMAGES OR
+ OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
+ ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
+ OTHER DEALINGS IN THE SOFTWARE.
+ .
+ For more information, please refer to <http://unlicense.org/>

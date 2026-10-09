@@ -1,0 +1,327 @@
+use crate::bail_ton_core_data;
+use crate::errors::TonCoreError;
+use base64::Engine;
+use base64::prelude::BASE64_STANDARD;
+use fastnum::{I512, U256};
+use std::hash::Hash;
+
+#[derive(Clone, PartialEq, Hash, Eq, Ord, PartialOrd)]
+pub struct TonHash(TonHashData);
+
+#[derive(Clone)]
+enum TonHashData {
+    Slice([u8; 32]),
+    Vec(Vec<u8>),
+}
+
+impl TonHash {
+    pub const BYTES_LEN: usize = 32;
+    pub const BITS_LEN: usize = 256;
+    pub const ZERO: TonHash = TonHash::from_slice_sized(&[0u8; 32]);
+
+    pub const fn from_slice_sized(data: &[u8; 32]) -> Self { Self(TonHashData::Slice(*data)) }
+
+    pub fn from_slice(data: &[u8]) -> Result<Self, TonCoreError> {
+        check_bytes_len(data)?;
+        Ok(Self::from_slice_sized(data[..32].try_into().unwrap()))
+    }
+
+    pub fn from_vec(data: Vec<u8>) -> Result<Self, TonCoreError> {
+        check_bytes_len(&data)?;
+        Ok(Self(TonHashData::Vec(data)))
+    }
+
+    pub fn from_u256(num: &U256) -> Result<Self, TonCoreError> {
+        let slice = &mut [0u8; 32];
+        let num_bytes = num.to_radix_le(256);
+        let offset = 32 - num_bytes.len();
+        slice[offset..].copy_from_slice(&num_bytes);
+        Ok(Self::from_slice_sized(slice))
+    }
+
+    pub fn from_i512(num: &I512) -> Result<Self, TonCoreError> {
+        let num_bytes = num.to_radix_le(256);
+        if num_bytes.len() > 32 {
+            bail_ton_core_data!("I512 value is too large to fit into TonHash");
+        }
+        TonHash::from_u256(&U256::from_radix_le(&num_bytes, 256).unwrap())
+    }
+
+    pub fn to_u256(&self) -> U256 {
+        // unwrap is save: TonHash always has 32 bytes
+        U256::from_radix_le(self.as_slice(), 256).unwrap()
+    }
+
+    pub fn to_i512(&self) -> I512 {
+        // unwrap is save: TonHash always has 32 bytes
+        I512::from_radix_le(self.as_slice(), 256).unwrap()
+    }
+
+    pub fn as_slice(&self) -> &[u8] { self.0.as_slice() }
+
+    pub fn as_slice_sized(&self) -> &[u8; 32] {
+        match &self.0 {
+            TonHashData::Slice(data) => data,
+            TonHashData::Vec(data) => data.as_slice().try_into().unwrap(),
+        }
+    }
+
+    pub fn as_slice_sized_mut(&mut self) -> &mut [u8; 32] {
+        match &mut self.0 {
+            TonHashData::Slice(data) => data,
+            TonHashData::Vec(data) => data.as_mut_slice().try_into().unwrap(),
+        }
+    }
+
+    pub fn as_slice_mut(&mut self) -> &mut [u8] {
+        match &mut self.0 {
+            TonHashData::Slice(data) => data,
+            TonHashData::Vec(data) => data.as_mut_slice(),
+        }
+    }
+
+    pub fn to_vec(&self) -> Vec<u8> { self.as_slice().to_vec() }
+    pub fn to_hex(&self) -> String { hex::encode(self.as_slice()) }
+    pub fn to_base64(&self) -> String { BASE64_STANDARD.encode(self.as_slice()) }
+
+    pub fn into_vec(self) -> Vec<u8> {
+        match self.0 {
+            TonHashData::Slice(data) => data.to_vec(),
+            TonHashData::Vec(data) => data,
+        }
+    }
+
+    pub fn rewrite_first_bits<T: Into<u128>>(&mut self, value: T, bits_len: usize) -> Result<(), TonCoreError> {
+        if bits_len == 0 {
+            return Ok(());
+        }
+        if bits_len > 128 {
+            return Err(TonCoreError::data("TonHash", "bits_len must be in range 0..=128"));
+        }
+
+        let value_u128 = value.into();
+        let shifted = value_u128 << (128 - bits_len);
+        let value_bytes = shifted.to_be_bytes();
+
+        if !crate::bits_utils::BitsUtils::rewrite(&value_bytes, 0, self.as_slice_mut(), 0, bits_len) {
+            bail_ton_core_data!("Failed to rewrite first {} bits of TonHash", bits_len);
+        }
+        Ok(())
+    }
+}
+
+impl TonHashData {
+    fn as_slice(&self) -> &[u8] {
+        match self {
+            TonHashData::Slice(data) => data.as_slice(),
+            TonHashData::Vec(data) => data.as_slice(),
+        }
+    }
+}
+
+fn from_hex<T: AsRef<[u8]>>(hex: T) -> Result<TonHash, TonCoreError> {
+    let bytes = hex::decode(hex)?;
+    check_bytes_len(&bytes)?;
+    Ok(TonHash(TonHashData::Vec(bytes)))
+}
+
+fn from_base64<T: AsRef<[u8]>>(base64: T) -> Result<TonHash, TonCoreError> {
+    TonHash::from_vec(BASE64_STANDARD.decode(base64)?)
+}
+
+fn check_bytes_len(bytes: &[u8]) -> Result<(), TonCoreError> {
+    if bytes.len() != TonHash::BYTES_LEN {
+        bail_ton_core_data!("expected bytes_len {}, but got {}", TonHash::BYTES_LEN, bytes.len());
+    }
+    Ok(())
+}
+
+#[rustfmt::skip]
+mod traits_impl {
+    use super::*;
+    use std::fmt::{Debug, Display, Formatter, UpperHex};
+    use std::fmt::Result as FmtResult;
+    use std::hash::Hash;
+    use std::str::FromStr;
+    use crate::bail_ton_core_data;
+    use crate::errors::TonCoreError;
+
+    impl Default for TonHash { fn default() -> Self { TonHash::ZERO } }
+    impl From<[u8; 32]> for TonHash { fn from(data: [u8; 32]) -> Self { Self(TonHashData::Slice(data)) } }
+    impl From<&[u8; 32]> for TonHash { fn from(data: &[u8; 32]) -> Self { Self(TonHashData::Slice(*data)) } }
+    impl FromStr for TonHash {
+        type Err = TonCoreError;
+        fn from_str(s: &str) -> Result<Self, Self::Err> {
+            if s.len() == 64 {
+                return from_hex(s);
+            }
+            if s.len() == 66 && (s.starts_with("0x") || s.starts_with("0X")) {
+                return from_hex(&s[2..]);
+            }
+            match from_base64(s) {
+                Ok(hash) => Ok(hash),
+                Err(_) => bail_ton_core_data!("Parsing TonHash failed for str: {s}"),
+            }
+        }
+    }
+    impl TryFrom<String> for TonHash {
+        type Error = TonCoreError;
+        fn try_from(value: String) -> Result<Self, Self::Error> { TonHash::from_str(&value) }
+    }
+    impl TryFrom<&str> for TonHash {
+        type Error = TonCoreError;
+        fn try_from(value: &str) -> Result<Self, Self::Error> { TonHash::from_str(value) }
+    }
+
+    impl AsRef<[u8]> for TonHash { fn as_ref(&self) -> &[u8] { self.as_slice() } }
+    impl UpperHex for TonHash { fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult { write!(f, "{}", self.to_hex().to_uppercase()) } }
+    impl Display for TonHash { fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult { write!(f, "{self:X}") } }
+    impl Debug for TonHash { fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult { write!(f, "TonHash[{self:X}]") } }
+    
+    // Must implement it manually, because we don't distinguish between Vec and Slice
+    impl Eq for TonHashData {}
+    impl PartialEq for TonHashData { fn eq(&self, other: &Self) -> bool { self.as_slice() == other.as_slice() } }
+    impl Hash for TonHashData { fn hash<H: std::hash::Hasher>(&self, state: &mut H) { state.write(self.as_slice()); } }
+    impl Ord for TonHashData {fn cmp(&self, other: &Self) -> std::cmp::Ordering {self.as_slice().cmp(other.as_slice()) } }
+    impl PartialOrd for TonHashData {fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> { Some(self.cmp(other)) } }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::collections::HashSet;
+    use std::str::FromStr;
+    use tokio_test::assert_err;
+
+    #[test]
+    fn test_ton_hash_display() -> anyhow::Result<()> {
+        let data = [255u8; 32];
+        let hash = TonHash::from(data);
+        assert_eq!(format!("{hash}"), "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF");
+        assert_eq!(format!("{hash:X}"), "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF");
+        Ok(())
+    }
+
+    #[test]
+    fn test_ton_hash_from() -> anyhow::Result<()> {
+        let data = [1u8; 32];
+        let hash = TonHash::from(data);
+        assert_eq!(hash.as_slice(), &data);
+        Ok(())
+    }
+
+    #[test]
+    fn test_ton_hash_slice() -> anyhow::Result<()> {
+        let data = [1u8; 32];
+        let hash = TonHash::from_slice(&data)?;
+        assert_eq!(hash.as_slice(), &data);
+
+        let wrong_data = [1u8; 31];
+        assert_err!(TonHash::from_slice(&wrong_data));
+        Ok(())
+    }
+
+    #[test]
+    fn test_ton_hash_from_slice_sized() -> anyhow::Result<()> {
+        let data = [1u8; 32];
+        let hash = TonHash::from_slice_sized(&data);
+        assert_eq!(hash.as_slice(), &data);
+        Ok(())
+    }
+
+    #[test]
+    fn test_ton_hash_from_vec() -> anyhow::Result<()> {
+        let data = vec![1u8; 32];
+        let hash = TonHash::from_vec(data.clone())?;
+        assert_eq!(hash.as_slice(), &data);
+        Ok(())
+    }
+
+    #[test]
+    fn test_ton_hash_from_hex() -> anyhow::Result<()> {
+        let data = [255u8; 32];
+        for hex_str in &[
+            "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF",
+            "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+            "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+            "0Xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+        ] {
+            let hash = TonHash::from_str(hex_str)?;
+            assert_eq!(hash.as_slice(), &data);
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn test_ton_hash_from_base64() -> anyhow::Result<()> {
+        let data = [
+            159, 115, 38, 150, 26, 81, 188, 250, 200, 211, 46, 142, 240, 183, 144, 7, 187, 83, 144, 183, 68, 163, 90,
+            117, 106, 189, 241, 66, 113, 59, 99, 240,
+        ];
+        let base64_str = "n3MmlhpRvPrI0y6O8LeQB7tTkLdEo1p1ar3xQnE7Y/A=";
+        let hash = TonHash::from_str(base64_str)?;
+        assert_eq!(hash.as_slice(), &data);
+        Ok(())
+    }
+
+    #[test]
+    fn test_ton_hash_data_hash_eq_impl() -> anyhow::Result<()> {
+        let data1 = [1u8; 32];
+        let data2 = vec![1u8; 32];
+        let hash1 = TonHash::from_slice_sized(&data1);
+        let hash2 = TonHash::from_vec(data2)?;
+        assert_eq!(hash1, hash2);
+        let storage = HashSet::from([hash1, hash2]);
+        assert_eq!(storage.len(), 1);
+        Ok(())
+    }
+
+    #[test]
+    fn test_ton_hash_rewrite_first_bits() -> anyhow::Result<()> {
+        let hash_one = TonHash::from_slice_sized(&[255u8; 32]);
+        let mut hash = hash_one.clone();
+        hash.rewrite_first_bits(0u8, 0)?;
+        assert_eq!(hash, hash_one);
+
+        hash.rewrite_first_bits(0u8, 1)?;
+        assert_eq!(hash.as_slice_sized()[0], 0b0111_1111);
+
+        hash.rewrite_first_bits(1u8, 1)?;
+        assert_eq!(hash.as_slice_sized()[0], 0b1111_1111);
+
+        hash.rewrite_first_bits(0u8, 2)?;
+        assert_eq!(hash.as_slice_sized()[0], 0b0011_1111);
+
+        hash.rewrite_first_bits(5u8, 3)?;
+        assert_eq!(hash.as_slice_sized()[0], 0b1011_1111);
+
+        hash.rewrite_first_bits(0u8, 8)?;
+        assert_eq!(hash.as_slice_sized()[0], 0b0000_0000);
+
+        let mut hash = TonHash::ZERO;
+        hash.rewrite_first_bits(u16::MAX, 9)?;
+        assert_eq!(hash.as_slice_sized()[0], 0b1111_1111);
+        assert_eq!(hash.as_slice_sized()[1], 0b1000_0000);
+
+        let mut hash = TonHash::ZERO;
+        hash.rewrite_first_bits(u128::MAX, 128)?;
+        for i in 0..16 {
+            assert_eq!(hash.as_slice_sized()[i], 0xFF);
+        }
+
+        let mut hash = TonHash::ZERO;
+        assert_err!(hash.rewrite_first_bits(1u8, 129));
+        Ok(())
+    }
+
+    #[test]
+    fn test_ton_hash_to_num() -> anyhow::Result<()> {
+        let zero_num = TonHash::ZERO.to_u256();
+        assert_eq!(zero_num, U256::from(0u8));
+
+        let max_hash = TonHash::from_slice_sized(&[255u8; 32]);
+        let max_num = max_hash.to_u256();
+        assert_eq!(max_num, U256::MAX);
+        Ok(())
+    }
+}
