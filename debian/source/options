@@ -1,0 +1,5 @@
+# Unanchored patterns match any path component: "examples", "build" and
+# "target" would also strip vendored crates. See PACKAGING.md.
+tar-ignore = .git
+tar-ignore = .cache
+tar-ignore = build-packages

@@ -1,0 +1,6 @@
+{
+  "git": {
+    "sha1": "bfc45e32d3768eb07d2d01ba43f0b68be1749505"
+  },
+  "path_in_vcs": "crates/ton_macros"
+}
